@@ -10,7 +10,7 @@
 
 
 
-// Your global variables...
+/* Global variables. */
 volatile double pot_voltage = 0.0;
 
 
@@ -44,12 +44,14 @@ void myADC_Init()
 
 void myDAC_Init()
 {
-
+	/* Enable DAC Control Register. */
+	DAC->CR |= DAC_CR_DACEN1;
 }
 
 void myTIM2_Init()
 {
-
+	/* Enable the clock for TIM2 peripheral. */
+	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
 }
 
 int main(int argc, char* argv[])
@@ -57,14 +59,14 @@ int main(int argc, char* argv[])
 
 	InitGPIO();
 	myEXTI_Init();		/* Initialize EXTI */
-	myADC_Init();
-	myDAC_Init();
-	myTIM2_Init();
+	myADC_Init();		/* Initialize ADC */
+	myDAC_Init();		/* Initialize DAC */
+	myTIM2_Init();		/* Initialize TIM2 */
 
-	//ADC->CR |= ADC_CR_ADSTART;
+	/* ADC->CR |= ADC_CR_ADSTART; */
 	while (1)
 	{
-		// Nothing is going on here...
+		/* Nothing here. */
 	}
 
 	return 0;
@@ -75,14 +77,39 @@ int main(int argc, char* argv[])
 /* This handler is declared in system/src/cmsis/vectors_stm32f0xx.c */
 void EXTI0_1_IRQHandler()
 {
+	/* Local variables */
+	unsigned int period = 0;
+	unsigned int frequency = 0;
 
 	/* Check if EXTI1 interrupt pending flag is indeed set */
 	if ((EXTI->PR & EXTI_PR_PR1) != 0)
 	{
 
+		/* Code from Part 2 of Introductory Lab. */
+		if(first_edge == 1){
+			first_edge = 0;
+			/* Clear count register (TIM2->CNT) */
+			TIM2->CNT &= ~(TIM2->CNT);
+			/* Start timer (TIM2->CR1) */
+			TIM2->CR1 |= TIM_CR1_CEN;
+		}
+		else if(first_edge == 0){
+			/* Stop timer (TIM2->CR1) */
+			TIM2->CR1 &= ~((uint16_t)0x0001);
+			/* Calculate signal period and frequency */
+			frequency = ((float)SystemCoreClock / ((uint32_t)TIM2->CNT);
+			period = 1000.0 / frequency;
+			
+			/*This needs to be changed to LCD. Lab Tech said to do last once we figure out the LCD display.*/
+			/* Print calculated values to the console */
+			trace_printf("freq = %u KHz\n ; period = %u ms", frequency, period);
+			first_edge = 1;
+		}
+				
+		/* Clear EXTI1 interrupt pending flag */
+		EXTI->PR |= ((uint32_t)0x2);
+
 	}
-	//Clear EXTI1 interrupt pending flag
-	EXTI->PR |= ((uint32_t)0x2);
 
 }
 
