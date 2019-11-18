@@ -129,6 +129,35 @@ void EXTI0_1_IRQHandler()
 
 }
 
+void TIM3_IRQHandler()
+{
+	/* Check if update interrupt flag is indeed set */
+  	if ((TIM3->SR & TIM_SR_UIF) != 0)
+	{
+	    float displayFreq = frequency;
+    	char *freqFormat = "F:%4.0fHz";
+	    if (displayFreq > 10000)
+		{
+    		displayFreq /= 1000;
+			freqFormat = "F:%3.0fkHz";
+    	}
+
+    	char freqString[9];
+    	char resString[9];
+
+    	sprintf(freqString, freqFormat, displayFreq);
+    	sprintf(resString, "R:%4.0fOh", resistance);
+
+    	Write_Both_Lines(freqString, resString);
+
+	    /* Clear update interrupt flag */
+    	TIM3->SR &= ~(TIM_SR_UIF);
+
+	    /* Restart stopped timer */
+	    TIM3->CR1 |= TIM_CR1_CEN;
+	}
+}
+
 
 #pragma GCC diagnostic pop
 
